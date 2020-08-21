@@ -1,0 +1,65 @@
+
+server:
+  port: 9008
+spring:
+  application:
+    name: api-getway
+  redis:
+    host: 139.199.31.248
+    port: 6379
+    timeout: 6000ms
+    jedis:
+      pool:
+        max-active: 1000
+        max-wait: -1ms
+        max-idle: 10
+        min-idle: 5
+    password: pass@2986
+    database: 0
+  cloud:
+    gateway:
+      routes:
+      - id: service1
+        uri: lb://service-1
+        predicates:
+            # 转发该路径
+         - Path=/api/v1/service1/**
+      - id: service2
+        uri: lb://service-2
+        predicates:
+          # 转发该路径
+        - Path=/api/v1/service2/**
+        filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 1
+            redis-rate-limiter.burstCapacity: 3
+            key-resolver: "#{@apiKeyResolver}"
+      - id: service2
+        uri: http://localhost:9008/
+        predicates:
+        # 转发该路径
+        - Path=/api/v1/auth/**
+        filters:
+        - StripPrefix=2
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:9005/eureka/
+org:
+  my:
+    jwt:
+      #跳过认证的路由
+      skip-auth-urls:
+      - /api/v1/service2/test/info
+      ############################################
+      #   有效时长
+      #     单位：d:天、h:小时、m:分钟、s:秒
+      ###########################################
+      effective-time: 1m
+
+
+
+
+
